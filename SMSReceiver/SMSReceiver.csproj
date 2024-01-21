@@ -93,9 +93,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
-    <Content Include="u-a-chk.ico" />
-    <Content Include="验证码-_1_.ico" />
-    <Content Include="验证码.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

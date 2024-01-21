@@ -194,10 +194,23 @@ namespace SMSReceiver
             }
             Log("验证码消息，发出提示");
             string[] lines = sms.Split(new string[] {"\r\n", "\n"}, StringSplitOptions.RemoveEmptyEntries);
-            string fromNumber = lines[0];
-            string content = string.Join("\n", lines.Skip(1));
+            string fromNumber = null, content = null;
+            if (lines.Length > 1 && long.TryParse(lines[0], out long result)) 
+            {
+                fromNumber = lines[0];
+                content = string.Join("\n", lines.Skip(1));
+            }
+            else
+            {
+                content = sms;
+            }
             string code = ExtractVerifyCode(content);
-            notifyIcon.ShowBalloonTip(5000, "验证码 " + code + " 来自 " + fromNumber, content, ToolTipIcon.Info);
+            string notifyTitle = string.IsNullOrEmpty(code) ? "短信消息" : "短信验证码 " + code;
+            if (!string.IsNullOrEmpty(fromNumber))
+            {
+                notifyTitle += " 来自 " + fromNumber;
+            }
+            notifyIcon.ShowBalloonTip(5000, notifyTitle, content, ToolTipIcon.Info);
             if (code != "" && Settings.EnableAutoCopy)
             {
                 SetClipboardText(code);
