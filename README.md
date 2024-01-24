@@ -89,7 +89,7 @@ https://github.com/pppscn/SmsForwarder/releases/download/v3.2.0/SmsForwarder_rel
 
 **请求方式** 选择 POST
 
-**Webhook Server **填写EMQX的Rest API地址
+**Webhook Server **填写EMQX的Rest API地址 + /publish，比如 https://xxxxxxxx.ala.cn-hangzhou.emqxsl.cn:8443/api/v5/publish
 
 ![image-20240121001653320](./assets/image-20240121001653320.png)
 
