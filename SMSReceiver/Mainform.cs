@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.IO;
 using Newtonsoft.Json;
 using MQTTnet.Server;
+using System.Timers;
 
 namespace SMSReceiver
 {
@@ -28,6 +29,8 @@ namespace SMSReceiver
         public static string ConfigPath = "./config.json";
         public IMqttClient MqttClient;
         public Settings Settings;
+        public DateTime LastConnectTime = DateTime.Now;
+        public System.Timers.Timer ReconnectTimer;
 
 
 
@@ -37,6 +40,19 @@ namespace SMSReceiver
             LoadSettings();
             MqttClient = InitMqttClient();
             await Connect();
+            ReconnectTimer = new System.Timers.Timer(1000);
+            ReconnectTimer.Elapsed += ReconnectTimerElapsed;
+            ReconnectTimer.Start();
+        }
+
+        private async void ReconnectTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            if (!MqttClient.IsConnected && (DateTime.Now - LastConnectTime).TotalSeconds > 60)
+            {
+                LastConnectTime = DateTime.Now;
+                Log("连接守护：检测到连接断开且60秒内没有尝试重连");
+                await ReconnectMqttClient();
+            }
         }
 
         public void LoadSettings()
@@ -117,6 +133,7 @@ namespace SMSReceiver
             try
             {
                 Log("尝试连接到Mqtt服务器");
+                LastConnectTime = DateTime.Now;
                 var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer(Settings.MqttAddress, Settings.MqttPort)
                                    .WithCredentials(Settings.MqttUsername, Settings.MqttPassword)
                                    .WithTlsOptions(o => o.WithCertificateValidationHandler(_ => true))
@@ -143,17 +160,15 @@ namespace SMSReceiver
             if (!MqttClient.IsConnected)
             {
                 await Connect();
-                if (!MqttClient.IsConnected)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(5));
-                }
             }
         }
 
         private async Task HandleMqttDisconnect(MqttClientDisconnectedEventArgs arg)
         {
-            Log("MQTT客户端已断开连接。正在尝试重连...");
+            Thread.Sleep(100);
+            Log("MQTT客户端已断开连接，5秒后进行重新连接");
             SyncStatus();
+            Thread.Sleep(5000);
             await ReconnectMqttClient();
         }
 
