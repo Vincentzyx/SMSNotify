@@ -15,6 +15,8 @@ namespace SMSReceiver
         public string MqttPassword = "";
         public string MqttTopic = "";
         public bool EnableAutoCopy = true;
+        public bool EnableAutoPaste = true;
+        public bool EnterAfterPaste = true;
         public bool ShowAllSms = true;
     }
 }

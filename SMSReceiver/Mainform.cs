@@ -110,6 +110,19 @@ namespace SMSReceiver
             }));
         }
 
+        async void Paste()
+        {
+            await Task.Run(() =>
+            {
+                SendKeys.SendWait("^v");
+                if (Settings.EnterAfterPaste)
+                {
+                    Thread.Sleep(300);
+                    SendKeys.SendWait("{enter}");
+                }
+            });
+        }
+
 
         public IMqttClient InitMqttClient()
         {
@@ -202,7 +215,8 @@ namespace SMSReceiver
 
         public void HandleSMS(string sms)
         {
-            if (!Settings.ShowAllSms && !sms.Contains("验证码") && !sms.ToLower().Contains("code"))
+            bool isVerifyCode = sms.Contains("验证码") || sms.ToLower().Contains("code");
+            if (isVerifyCode && !Settings.ShowAllSms)
             {
                 Log("非验证码消息，不提示");
                 return;
@@ -219,22 +233,38 @@ namespace SMSReceiver
             {
                 content = sms;
             }
-            string code = ExtractVerifyCode(content);
-            string notifyTitle = string.IsNullOrEmpty(code) ? "短信消息" : "短信验证码 " + code;
+            string notifyTitle = "";
+            if (isVerifyCode)
+            {
+                string code = ExtractVerifyCode(content);
+                notifyTitle = string.IsNullOrEmpty(code) ? "短信验证码" : "短信验证码 " + code;
+                if (!string.IsNullOrEmpty(code) && Settings.EnableAutoCopy)
+                {
+                    SetClipboardText(code);
+                    Log("检测到验证码 " + code + "，复制到剪切板");
+
+                    if (Settings.EnableAutoPaste)
+                    {
+                        Paste();
+                        Log("自动粘贴");
+                    }
+                }
+                else
+                {
+                    Log("未启用自动复制");
+                }
+            }
+            else
+            {
+                notifyTitle = "短信消息";
+
+            }
+
             if (!string.IsNullOrEmpty(fromNumber))
             {
                 notifyTitle += " 来自 " + fromNumber;
             }
             notifyIcon.ShowBalloonTip(5000, notifyTitle, content, ToolTipIcon.Info);
-            if (code != "" && Settings.EnableAutoCopy)
-            {
-                SetClipboardText(code);
-                Log("检测到验证码 " + code + "，复制到剪切板");
-            }
-            else
-            {
-                Log("未启用自动复制");
-            }
         }
 
         private void Mainform_Shown(object sender, EventArgs e)
